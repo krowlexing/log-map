@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package kv;
+
+service KVServer {
+    rpc Subscribe(SubscribeRequest) returns (stream Record);
+    rpc Write(stream WriteRequest) returns (stream WriteResponse);
+}
+
+message SubscribeRequest {
+    uint64 start_ordinal = 1;
+}
+
+message Record {
+    uint64 ordinal = 1;
+    string key = 2;
+    bytes value = 3;
+    int64 timestamp = 4;
+}
+
+message WriteRequest {
+    uint64 ordinal = 1;
+    string key = 2;
+    bytes value = 3;
+    uint64 latest_known = 4;
+}
+
+message WriteResponse {
+    bool accepted = 1;
+    string error = 2;
+    uint64 assigned_ordinal = 3;
+}
