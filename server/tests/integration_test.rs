@@ -1,15 +1,10 @@
 use futures_util::StreamExt;
-use kv::kv_server_client::KvServerClient;
-use kv::{SubscribeRequest, WriteRequest};
+use log_server_types::kv::{kv_server_client::KvServerClient, SubscribeRequest, WriteRequest};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::time::sleep;
-
-pub mod kv {
-    tonic::include_proto!("kv");
-}
 
 async fn start_test_server() -> (SocketAddr, tokio::task::JoinHandle<()>) {
     let listener = TcpListener::bind("[::1]:0").await.unwrap();

@@ -6,20 +6,24 @@ A distributed log server with gRPC API for subscribing to and writing records.
 
 ```
 log-server/
-├── Cargo.toml        # Workspace configuration
-└── server/           # Main crate
+├── Cargo.toml           # Workspace configuration
+├── types/               # Proto definitions crate
+│   ├── Cargo.toml
+│   ├── build.rs         # Proto compilation
+│   ├── proto/           # gRPC definitions
+│   └── src/
+└── server/              # Server implementation
     ├── Cargo.toml
-    ├── build.rs      # Proto compilation
-    ├── proto/        # gRPC definitions
     ├── src/
     └── tests/
 ```
 
 ## Architecture
 
+- **types crate** contains generated gRPC message types and service definitions
+- **server crate** implements the gRPC service with SQLite storage
 - **SQLite database** stores records with auto-assigned ordinals
-- **gRPC server** exposes `Subscribe` and `Write` RPCs
-- **Streaming** support for both operations
+- **Streaming** support for both Subscribe and Write RPCs
 
 ## Proto Definition
 
@@ -33,7 +37,7 @@ service KVServer {
 ## Running
 
 ```bash
-cargo run
+cargo run -p log-server
 ```
 
 Server listens on `[::1]:50051`.

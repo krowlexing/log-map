@@ -955,15 +955,24 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures-util",
- "prost",
+ "log-server-types",
  "sqlx",
  "tokio",
  "tokio-stream",
  "tonic",
- "tonic-prost",
  "tonic-prost-build",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "log-server-types"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
 ]
 
 [[package]]

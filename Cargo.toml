@@ -1,2 +1,3 @@
 [workspace]
-members = ["server"]
+members = ["types", "server"]
+resolver = "2"

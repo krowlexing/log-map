@@ -1,13 +1,9 @@
 use crate::storage::{Storage, WriteError};
 use futures_util::stream::{Stream, StreamExt};
-use kv::{kv_server_server::{KvServer, KvServerServer}, Record, SubscribeRequest, WriteRequest, WriteResponse};
+use log_server_types::kv::{kv_server_server::{KvServer, KvServerServer}, Record, SubscribeRequest, WriteRequest, WriteResponse};
 use std::pin::Pin;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-
-pub mod kv {
-    tonic::include_proto!("kv");
-}
 
 #[derive(Clone)]
 pub struct KvServiceImpl {
