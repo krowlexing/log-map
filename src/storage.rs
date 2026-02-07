@@ -1,5 +1,5 @@
-use crate::{db::DbPool, models::Record};
-use futures_util::stream::{Stream, StreamExt};
+use crate::models::Record;
+use futures_util::stream::Stream;
 use sqlx::{Row, SqlitePool};
 use std::pin::Pin;
 
@@ -67,7 +67,7 @@ impl Storage {
         ordinal: u64,
     ) -> Pin<Box<dyn Stream<Item = Record> + Send>> {
         let pool = self.pool.clone();
-        let mut tx = Box::pin(async_stream::stream! {
+        Box::pin(async_stream::stream! {
             let mut conn = pool.acquire().await.unwrap();
             let mut ordinal = ordinal as i64;
 
@@ -95,9 +95,7 @@ impl Storage {
                     };
                 }
             }
-        });
-
-        Box::pin(tx)
+        })
     }
 }
 
