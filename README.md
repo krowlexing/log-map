@@ -2,6 +2,19 @@
 
 A distributed log server with gRPC API for subscribing to and writing records.
 
+## Project Structure
+
+```
+log-server/
+├── Cargo.toml        # Workspace configuration
+└── server/           # Main crate
+    ├── Cargo.toml
+    ├── build.rs      # Proto compilation
+    ├── proto/        # gRPC definitions
+    ├── src/
+    └── tests/
+```
+
 ## Architecture
 
 - **SQLite database** stores records with auto-assigned ordinals
