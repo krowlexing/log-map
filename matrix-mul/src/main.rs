@@ -4,10 +4,19 @@ use std::env;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let addr = args.get(1).cloned().unwrap_or_else(|| "localhost:50051".to_string());
+    let addr = args
+        .get(1)
+        .cloned()
+        .unwrap_or_else(|| "localhost:50051".to_string());
     let mode = args.get(2).cloned().unwrap_or_else(|| "client".to_string());
 
-    let mm = matrix_mul::MatrixMul::connect(addr.clone()).await?;
+    let mut mm = matrix_mul::MatrixMul::connect(addr.clone()).await?;
+
+    let m: usize = args.get(3).unwrap_or(&"2".to_string()).parse()?;
+    let n: usize = args.get(4).unwrap_or(&"2".to_string()).parse()?;
+    let p: usize = args.get(5).unwrap_or(&"2".to_string()).parse()?;
+
+    mm.set_size(m, n, p);
 
     match mode.as_str() {
         "load" => {

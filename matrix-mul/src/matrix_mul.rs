@@ -1,7 +1,7 @@
 //! Distributed matrix multiplication implementation.
 
-use std::time::Duration;
 use rand::Rng;
+use std::time::Duration;
 
 use crate::Error;
 
@@ -23,7 +23,18 @@ impl MatrixMul {
     /// Connects to a log-server and creates a new `MatrixMul` instance.
     pub async fn connect(addr: impl Into<log_map::ServerAddr>) -> Result<Self, Error> {
         let map = log_map::LogMap::connect(addr).await?;
-        Ok(Self { map, m: 0, n: 0, p: 0 })
+        Ok(Self {
+            map,
+            m: 0,
+            n: 0,
+            p: 0,
+        })
+    }
+
+    pub fn set_size(&mut self, m: usize, n: usize, p: usize) {
+        self.m = m;
+        self.n = n;
+        self.p = p;
     }
 
     /// Loads matrices A and B into the log-map.
@@ -47,7 +58,8 @@ impl MatrixMul {
 
         for (i, row) in a.into_iter().enumerate() {
             let key = -(i as i64 + 1);
-            let value = row.iter()
+            let value = row
+                .iter()
                 .map(|v| v.to_string())
                 .collect::<Vec<_>>()
                 .join(",");
@@ -56,7 +68,8 @@ impl MatrixMul {
 
         for (j, row) in b.into_iter().enumerate() {
             let key = -(m as i64 + j as i64 + 1);
-            let value = row.iter()
+            let value = row
+                .iter()
                 .map(|v| v.to_string())
                 .collect::<Vec<_>>()
                 .join(",");
@@ -127,7 +140,10 @@ impl MatrixMul {
         for i in 0..m {
             for j in 0..p {
                 let key = (i * p + j + 1) as i64;
-                let value = self.map.get(key).await?
+                let value = self
+                    .map
+                    .get(key)
+                    .await?
                     .ok_or(Error::MissingMatrixData(key))?;
                 result[i][j] = value.parse()?;
             }
@@ -153,6 +169,7 @@ impl MatrixMul {
     /// Picks a random task (i, j) that hasn't been computed yet.
     fn pick_random_task(&self) -> Option<(usize, usize)> {
         if self.m == 0 || self.p == 0 {
+            println!("none");
             return None;
         }
 
@@ -175,7 +192,8 @@ impl MatrixMul {
 
         let a_key = -(i as i64 + 1);
         if let Some(value) = self.map.get(a_key).await? {
-            row_a = value.split(',')
+            row_a = value
+                .split(',')
                 .map(|s| s.parse::<f64>())
                 .collect::<Result<Vec<_>, _>>()?;
         }
@@ -183,7 +201,8 @@ impl MatrixMul {
         for k in 0..self.n {
             let b_key = -(self.m as i64 + k as i64 + 1);
             if let Some(value) = self.map.get(b_key).await? {
-                let row: Vec<f64> = value.split(',')
+                let row: Vec<f64> = value
+                    .split(',')
                     .map(|s| s.parse::<f64>())
                     .collect::<Result<Vec<_>, _>>()?;
                 if let Some(&val) = row.get(j) {

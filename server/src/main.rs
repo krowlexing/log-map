@@ -11,12 +11,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let storage = Arc::new(storage::Storage::new(pool));
     let server = grpc::create_server(storage);
 
-    let addr = "[::1]:50051".parse()?;
-    Server::builder()
-        .add_service(server)
-        .serve(addr)
-        .await?;
+    let addr = "127.0.0.1:50051".parse()?;
+    Server::builder().add_service(server).serve(addr).await?;
 
     Ok(())
 }
-
