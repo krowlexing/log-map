@@ -7,7 +7,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = args.get(1).cloned().unwrap_or_else(|| "localhost:50051".to_string());
     let mode = args.get(2).cloned().unwrap_or_else(|| "client".to_string());
 
-    let mm = matrix_mul::MatrixMul::connect(addr).await?;
+    let mm = matrix_mul::MatrixMul::connect(addr.clone()).await?;
 
     match mode.as_str() {
         "load" => {
@@ -36,6 +36,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut mm = mm;
             println!("Loading {}x{} matrix A and {}x{} matrix B", m, n, n, p);
+            println!("Matrix A:");
+            for row in &a {
+                println!("  {:?}", row);
+            }
+            println!("Matrix B:");
+            for row in &b {
+                println!("  {:?}", row);
+            }
             mm.load_matrices(a, b).await?;
             println!("Matrices loaded. Run 'start' to begin computation.");
         }
@@ -45,9 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Computation started. Workers can now run.");
         }
         "client" => {
-            println!("Starting worker...");
+            let worker_id = std::process::id();
+            println!("Starting worker (PID: {})...", worker_id);
+            println!("Connecting to {}...", addr);
             mm.work().await?;
-            println!("Computation complete!");
+            println!("Worker (PID: {}) done!", worker_id);
         }
         "result" => {
             let m: usize = args.get(3).unwrap_or(&"2".to_string()).parse()?;

@@ -74,14 +74,24 @@ impl MatrixMul {
 
     /// Runs the worker loop: pick random tasks and compute until complete.
     pub async fn work(&self) -> Result<(), Error> {
+        let mut tasks_computed = 0;
         loop {
             if self.is_complete()? {
+                println!("Work complete! Computed {} tasks", tasks_computed);
                 return Ok(());
             }
 
             let task_id = self.pick_random_task();
             if let Some((i, j)) = task_id {
-                let _ = self.try_compute_task(i, j).await;
+                match self.try_compute_task(i, j).await {
+                    Ok(_) => {
+                        tasks_computed += 1;
+                        println!("Computed C[{}][{}]", i, j);
+                    }
+                    Err(e) => {
+                        println!("Failed to compute C[{}][{}]: {}", i, j, e);
+                    }
+                }
             }
 
             tokio::time::sleep(POLL_INTERVAL).await;
@@ -91,6 +101,7 @@ impl MatrixMul {
     /// Waits for the computation to complete (polls for all result keys).
     pub async fn wait_for_completion(&self, m: usize, p: usize) -> Result<(), Error> {
         let total = m * p;
+        let mut last_count = 0;
         loop {
             let mut count = 0;
             for idx in 1..=total {
@@ -98,6 +109,10 @@ impl MatrixMul {
                 if self.map.contains_key(key) {
                     count += 1;
                 }
+            }
+            if count != last_count {
+                println!("Progress: {}/{} elements computed", count, total);
+                last_count = count;
             }
             if count == total {
                 return Ok(());
@@ -183,6 +198,7 @@ impl MatrixMul {
         }
 
         let key = (i * self.p + j + 1) as i64;
+        println!("  Writing C[{}][{}] = {} to key {}", i, j, sum, key);
         self.map.insert(key, sum.to_string()).await?;
 
         Ok(())
