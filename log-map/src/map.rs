@@ -1,3 +1,5 @@
+//! Distributed map implementation with optimistic concurrency control.
+
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,6 +17,43 @@ use crate::sync::SyncTask;
 const MAP_PREFIX: &str = "map:";
 const MAX_RETRIES: usize = 5;
 
+/// A distributed key-value map backed by the log-server.
+///
+/// `LogMap` stores `i64` keys with `String` values through the log-server's
+/// gRPC API. All mutations go through the log's append-only storage with
+/// optimistic concurrency control.
+///
+/// # Conflict Resolution
+///
+/// When a write is rejected by the server, `LogMap` automatically:
+/// 1. Syncs the latest state from the server
+/// 2. Retries the write with updated `latest_known` ordinal
+/// 3. Uses exponential backoff (100ms starting, doubles each retry)
+/// 4. Gives up after 5 retries
+///
+/// # Key Encoding
+///
+/// Keys are encoded as `"map:{i64}"` in the log to avoid collisions with
+/// other data using the same log-server.
+///
+/// # Example
+///
+/// ```no_run
+/// use log_map::LogMap;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let map = LogMap::connect("localhost:50051").await?;
+///
+///     map.insert(1, "hello".to_string()).await?;
+///     assert_eq!(map.get(1).await?, Some("hello".to_string()));
+///
+///     map.remove(1).await?;
+///     assert_eq!(map.get(1).await?, None);
+///
+///     Ok(())
+/// }
+/// ```
 pub struct LogMap {
     inner: Arc<LogMapInner>,
 }
@@ -29,6 +68,14 @@ struct LogMapInner {
 }
 
 impl LogMap {
+    /// Connects to a log-server and creates a new `LogMap` instance.
+    ///
+    /// This spawns a background task that subscribes to log updates and
+    /// keeps the local cache synchronized.
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - Server address (e.g., `"localhost:50051"`)
     pub async fn connect(addr: impl Into<ServerAddr>) -> Result<Self, Error> {
         let server_addr = addr.into();
         let endpoint = Endpoint::from_shared(format!("http://{}", server_addr.0))?;
@@ -67,10 +114,15 @@ impl LogMap {
         Ok(Self { inner })
     }
 
+    /// Gets the value for a key from the local cache.
     pub async fn get(&self, key: i64) -> Result<Option<String>, Error> {
         Ok(self.inner.cache.get(&key))
     }
 
+    /// Inserts a key-value pair into the map.
+    ///
+    /// This writes to the log-server with optimistic concurrency control.
+    /// On conflict, it will retry up to 5 times with exponential backoff.
     pub async fn insert(&self, key: i64, value: String) -> Result<(), Error> {
         let mut retries = 0;
         let mut delay = Duration::from_millis(100);
@@ -106,6 +158,10 @@ impl LogMap {
         }
     }
 
+    /// Removes a key from the map by writing a tombstone.
+    ///
+    /// This writes an empty value to the log-server, which is interpreted
+    /// as a deletion by the sync task.
     pub async fn remove(&self, key: i64) -> Result<(), Error> {
         let mut retries = 0;
         let mut delay = Duration::from_millis(100);
@@ -141,23 +197,28 @@ impl LogMap {
         }
     }
 
+    /// Checks if the map contains a key.
     pub fn contains_key(&self, key: i64) -> bool {
         self.inner.cache.contains_key(&key)
     }
 
+    /// Returns the number of entries in the local cache.
     pub fn len(&self) -> usize {
         self.inner.cache.len()
     }
 
+    /// Returns `true` if the map contains no entries.
     pub fn is_empty(&self) -> bool {
         self.inner.cache.is_empty()
     }
 
+    /// Manually trigger a sync (no-op currently, sync happens in background).
     pub async fn sync_now(&self) -> Result<(), Error> {
         Ok(())
     }
 }
 
+/// Server address wrapper for type-safe connection.
 #[derive(Clone)]
 pub struct ServerAddr(pub String);
 

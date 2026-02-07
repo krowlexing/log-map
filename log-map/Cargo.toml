@@ -2,6 +2,8 @@
 name = "log-map"
 version = "0.1.0"
 edition = "2024"
+description = "A distributed key-value map backed by the log-server"
+license = "MIT"
 
 [dependencies]
 log-server-types = { path = "../types" }

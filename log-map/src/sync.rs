@@ -1,3 +1,5 @@
+//! Background synchronization task for keeping the cache updated.
+
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 

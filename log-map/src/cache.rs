@@ -1,3 +1,5 @@
+//! Thread-safe in-memory cache for key-value pairs.
+
 use std::collections::HashMap;
 use std::sync::RwLock;
 
