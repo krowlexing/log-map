@@ -1,3 +1,3 @@
 [workspace]
-members = ["types", "server"]
+members = ["types", "server", "log-map"]
 resolver = "2"
