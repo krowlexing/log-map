@@ -1,0 +1,14 @@
+[package]
+name = "matrix-mul"
+version = "0.1.0"
+edition = "2024"
+description = "Distributed matrix multiplication using log-map"
+license = "MIT"
+
+[dependencies]
+log-map = { path = "../log-map" }
+log-server-types = { path = "../types" }
+tokio = { version = "1", features = ["full"] }
+tonic = "0.14.3"
+thiserror = "2"
+rand = "0.8"

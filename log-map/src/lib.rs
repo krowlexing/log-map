@@ -34,4 +34,4 @@ mod map;
 mod sync;
 
 pub use error::Error;
-pub use map::LogMap;
+pub use map::{LogMap, ServerAddr};
