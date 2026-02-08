@@ -1,6 +1,6 @@
 use crate::storage::{Storage, WriteError};
 use futures_util::stream::{Stream, StreamExt};
-use log_server_types::kv::{kv_server_server::{KvServer, KvServerServer}, Record, SubscribeRequest, WriteRequest, WriteResponse};
+use log_server_types::kv::{kv_server_server::{KvServer, KvServerServer}, GetSnapshotRequest, GetSnapshotResponse, Record, SubscribeRequest, WriteRequest, WriteResponse};
 use std::pin::Pin;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -98,6 +98,27 @@ impl KvServer for KvServiceImpl {
         };
 
         Ok(Response::new(Box::pin(output)))
+    }
+
+    async fn get_snapshot(
+        &self,
+        _request: Request<GetSnapshotRequest>,
+    ) -> Result<Response<GetSnapshotResponse>, Status> {
+        match self.storage.get_latest_snapshot().await {
+            Ok(Some((ordinal, data))) => {
+                Ok(Response::new(GetSnapshotResponse {
+                    snapshot_ordinal: ordinal,
+                    snapshot_data: data,
+                }))
+            }
+            Ok(None) => {
+                Ok(Response::new(GetSnapshotResponse {
+                    snapshot_ordinal: 0,
+                    snapshot_data: Vec::new(),
+                }))
+            }
+            Err(e) => Err(Status::internal(format!("Failed to get snapshot: {}", e))),
+        }
     }
 }
 

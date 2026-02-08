@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug)]
@@ -15,6 +15,7 @@ pub enum Error {
     Io(std::io::Error),
     InvalidMagic(String),
     InvalidVersion(u32),
+    InvalidOrdinal,
 }
 
 impl From<std::io::Error> for Error {
@@ -29,6 +30,7 @@ impl std::fmt::Display for Error {
             Error::Io(e) => write!(f, "IO error: {}", e),
             Error::InvalidMagic(s) => write!(f, "Invalid magic: {}", s),
             Error::InvalidVersion(v) => write!(f, "Invalid version: {}", v),
+            Error::InvalidOrdinal => write!(f, "Invalid ordinal"),
         }
     }
 }
@@ -58,14 +60,16 @@ impl Snapshot {
         }
         let last = self.last_snapshot_ordinal.load(Ordering::Relaxed);
         if current_ordinal - last >= self.snapshot_interval {
-            self.last_snapshot_ordinal.store(current_ordinal, Ordering::Relaxed);
+            self.last_snapshot_ordinal
+                .store(current_ordinal, Ordering::Relaxed);
             return true;
         }
         false
     }
 
     fn snapshot_path(&self, ordinal: u64, extension: &str) -> PathBuf {
-        self.snapshot_dir.join(format!("snapshot_{}.{}", ordinal, extension))
+        self.snapshot_dir
+            .join(format!("snapshot_{}.{}", ordinal, extension))
     }
 
     pub async fn save_text(&self, records: &[(String, Vec<u8>)]) -> Result<(), Error> {
@@ -130,7 +134,9 @@ impl Snapshot {
             let data = tokio::fs::read(path).await?;
 
             if &data[0..4] != BMAP_MAGIC {
-                return Err(Error::InvalidMagic(String::from_utf8_lossy(&data[0..4]).to_string()));
+                return Err(Error::InvalidMagic(
+                    String::from_utf8_lossy(&data[0..4]).to_string(),
+                ));
             }
 
             let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
@@ -172,21 +178,32 @@ impl Snapshot {
         let mut bmap = None;
         let mut max_ordinal = 0u64;
 
+        println!(
+            "Reading snapshot directory: '{}'",
+            self.snapshot_dir.to_string_lossy()
+        );
         for entry in std::fs::read_dir(&self.snapshot_dir)? {
+            println!("found file: {:#?}", entry);
             let entry = entry?;
             let name = entry.file_name();
             let name_str = name.to_string_lossy();
 
             if let Some(rest) = name_str.strip_prefix("snapshot_") {
+                println!("matches snapshot_ prefix: {}", rest);
                 if let Some(ordinal_str) = rest.split('_').next() {
-                    if let Ok(ordinal) = ordinal_str.parse::<u64>() {
+                    let ordinal = PathBuf::from(&ordinal_str);
+                    let ordinal = ordinal.file_stem().unwrap();
+
+                    if let Ok(ordinal) = ordinal.to_string_lossy().parse::<u64>() {
                         if ordinal > max_ordinal {
+                            println!("ordinal > max_ordinal");
                             max_ordinal = ordinal;
                             tmap = None;
                             bmap = None;
                         }
 
                         if ordinal == max_ordinal {
+                            println!("ordinal == max_ordinal");
                             if name_str.ends_with(".tmap") {
                                 tmap = Some(entry.path());
                             } else if name_str.ends_with(".bmap") {
@@ -198,6 +215,50 @@ impl Snapshot {
             }
         }
 
+        println!("found {:#?} snapshot entry", bmap);
+
         Ok(SnapshotEntries { tmap, bmap })
+    }
+
+    pub async fn get_latest_snapshot(&self) -> Result<(u64, Option<Vec<u8>>), Error> {
+        let entries = self.read_snapshot_entries()?;
+
+        if let Some(path) = entries.bmap {
+            let data = tokio::fs::read(&path).await?;
+
+            if data.len() < 8 {
+                return Err(Error::InvalidMagic("File too short".to_string()));
+            }
+
+            if &data[0..4] != BMAP_MAGIC {
+                return Err(Error::InvalidMagic(
+                    String::from_utf8_lossy(&data[0..4]).to_string(),
+                ));
+            }
+
+            let version = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
+            if version != BMAP_VERSION {
+                return Err(Error::InvalidVersion(version));
+            }
+
+            let ordinal = self.extract_ordinal_from_path(&path)?;
+            return Ok((ordinal, Some(data)));
+        }
+
+        Ok((0, None))
+    }
+
+    fn extract_ordinal_from_path(&self, path: &PathBuf) -> Result<u64, Error> {
+        let filename = path.file_name().ok_or_else(|| Error::InvalidOrdinal)?;
+
+        let name_str = filename.to_string_lossy();
+        if let Some(rest) = name_str.strip_prefix("snapshot_") {
+            if let Some(ordinal_str) = rest.split('.').next() {
+                return ordinal_str
+                    .parse::<u64>()
+                    .map_err(|_| Error::InvalidOrdinal);
+            }
+        }
+        Err(Error::InvalidOrdinal)
     }
 }

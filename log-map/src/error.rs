@@ -15,4 +15,7 @@ pub enum Error {
 
     #[error("connection closed")]
     ConnectionClosed,
+
+    #[error("internal error: {0}")]
+    Internal(String),
 }

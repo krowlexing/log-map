@@ -5,6 +5,7 @@ package kv;
 service KVServer {
     rpc Subscribe(SubscribeRequest) returns (stream Record);
     rpc Write(stream WriteRequest) returns (stream WriteResponse);
+    rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
 }
 
 message SubscribeRequest {
@@ -29,4 +30,11 @@ message WriteResponse {
     bool accepted = 1;
     string error = 2;
     uint64 assigned_ordinal = 3;
+}
+
+message GetSnapshotRequest {}
+
+message GetSnapshotResponse {
+    uint64 snapshot_ordinal = 1;
+    bytes snapshot_data = 2;
 }

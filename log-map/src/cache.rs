@@ -24,6 +24,14 @@ impl Cache {
         }
     }
 
+    pub fn insert_all(&self, records: Vec<(i64, String)>) {
+        if let Ok(mut guard) = self.inner.write() {
+            for (key, value) in records {
+                guard.insert(key, value);
+            }
+        }
+    }
+
     pub fn remove(&self, key: &i64) {
         if let Ok(mut guard) = self.inner.write() {
             guard.remove(key);

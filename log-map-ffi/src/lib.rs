@@ -22,6 +22,7 @@ impl From<log_map::Error> for ErrorCode {
             log_map::Error::Status(_) => ErrorCode::GetError,
             log_map::Error::Conflict(_) => ErrorCode::InsertError,
             log_map::Error::ConnectionClosed => ErrorCode::InternalError,
+            log_map::Error::Internal(_) => ErrorCode::InternalError,
         }
     }
 }

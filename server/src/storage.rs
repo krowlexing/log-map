@@ -136,6 +136,16 @@ impl Storage {
             }
         })
     }
+
+    pub async fn get_latest_snapshot(&self) -> Result<Option<(u64, Vec<u8>)>, WriteError> {
+        if let Some(ref snapshot) = self.snapshot {
+            let (ordinal, data) = snapshot.get_latest_snapshot().await?;
+            if let Some(data) = data {
+                return Ok(Some((ordinal, data)));
+            }
+        }
+        Ok(None)
+    }
 }
 
 #[derive(Debug)]
