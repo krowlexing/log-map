@@ -28,6 +28,8 @@
 #include <cassert>
 #include <thread>
 #include <chrono>
+#include <cstring>
+#include <condition_variable>
 
 using namespace std::chrono_literals;
 
