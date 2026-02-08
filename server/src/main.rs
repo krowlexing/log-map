@@ -7,7 +7,7 @@ use log_server::{db, grpc, storage};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let pool = db::init_pool("sqlite:log.db").await?;
+    let pool = db::init_pool("sqlite::memory:").await?;
     let storage = Arc::new(storage::Storage::new(pool));
     let server = grpc::create_server(storage);
 

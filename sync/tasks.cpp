@@ -7,14 +7,14 @@
 #include <logmap_wal.hpp>
 
 const int NUM_THREADS = 10;
-const int ARRAY_SIZE = 10;
+const int ARRAY_SIZE = 100;
 
 int main()
 {
 	std::atomic_int PID = 0;
 
     // choose implementation of WAL log
-    
+
     // templet::write_ahead_log wal;
 	templet::logmap_wal wal;
 	std::vector<std::thread> threads(NUM_THREADS);
