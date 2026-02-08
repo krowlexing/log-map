@@ -6,16 +6,46 @@ A distributed log server with gRPC API for subscribing to and writing records.
 
 ```
 log-server/
-├── Cargo.toml           # Workspace configuration
-├── types/               # Proto definitions crate
-│   ├── Cargo.toml
-│   ├── build.rs         # Proto compilation
-│   ├── proto/           # gRPC definitions
-│   └── src/
-└── server/              # Server implementation
-    ├── Cargo.toml
-    ├── src/
-    └── tests/
+├── types/                  # Proto definitions crate
+├── server/                 # Server implementation
+├── log-map/                # Rust KV map client
+├── log-map-ffi/            # C FFI bindings
+├── include/                # C++ headers
+├── sync/                   # C++ templet framework + sample application
+└── snapshots/              # Database snapshots
+```
+
+## Dependencies
+
+- Rust toolchain
+- Protobuf compiler
+- GCC compiler
+
+
+## Running
+
+Build project for C bindings
+
+```
+cargo build --release
+```
+
+Start log-map server. this will create log.db sqlite database at the root of the project.
+
+```bash
+cargo run --release -p log-server
+```
+
+Compile client using compiled map library
+
+```bash
+cd ./sync && ./build.sh
+```
+
+Run client
+
+```bash
+./run.sh
 ```
 
 ## Architecture
@@ -34,32 +64,3 @@ service KVServer {
 }
 ```
 
-## Running
-
-```bash
-cargo run -p log-server
-```
-
-Server listens on `[::1]:50051`.
-
-## Testing
-
-```bash
-cargo test
-```
-
-## API
-
-### Subscribe
-
-Request with `start_ordinal` to receive all records from that point onward as a stream.
-
-### Write
-
-Stream write requests with:
-- `ordinal`: proposed ordinal
-- `key`: record key
-- `value`: record value
-- `latest_known`: client's latest seen ordinal (for conflict detection)
-
-Returns `accepted: true` if written, `false` on conflict.

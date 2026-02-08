@@ -1,14 +1,14 @@
 //! Distributed map implementation with optimistic concurrency control.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use futures_util::{stream, StreamExt};
-use log_server_types::kv::kv_server_client::KvServerClient;
+use futures_util::{StreamExt, stream};
 use log_server_types::kv::WriteRequest;
-use tonic::transport::{Channel, Endpoint};
+use log_server_types::kv::kv_server_client::KvServerClient;
 use tokio::task::JoinHandle;
+use tonic::transport::{Channel, Endpoint};
 
 use crate::cache::Cache;
 use crate::error::Error;
@@ -140,7 +140,10 @@ impl LogMap {
             let mut client = self.inner.client.lock().await;
             let request_stream = stream::once(async { request });
             let mut response_stream = client.write(request_stream).await?.into_inner();
-            let response = response_stream.next().await.ok_or(Error::ConnectionClosed)??;
+            let response = response_stream
+                .next()
+                .await
+                .ok_or(Error::ConnectionClosed)??;
             drop(client);
 
             if response.accepted {
@@ -179,7 +182,10 @@ impl LogMap {
             let mut client = self.inner.client.lock().await;
             let request_stream = stream::once(async { request });
             let mut response_stream = client.write(request_stream).await?.into_inner();
-            let response = response_stream.next().await.ok_or(Error::ConnectionClosed)??;
+            let response = response_stream
+                .next()
+                .await
+                .ok_or(Error::ConnectionClosed)??;
             drop(client);
 
             if response.accepted {
