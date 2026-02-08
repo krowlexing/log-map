@@ -80,6 +80,13 @@ impl KvServer for KvServiceImpl {
                                     assigned_ordinal: 0,
                                 });
                             }
+                            Err(WriteError::Snapshot(e)) => {
+                                yield Ok(WriteResponse {
+                                    accepted: false,
+                                    error: format!("Snapshot error: {}", e),
+                                    assigned_ordinal: 0,
+                                });
+                            }
                         }
                     }
                     Err(e) => {

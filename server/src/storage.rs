@@ -1,15 +1,31 @@
 use crate::models::Record;
+use crate::snapshot;
 use futures_util::stream::Stream;
 use sqlx::{Row, SqlitePool};
 use std::pin::Pin;
 
 pub struct Storage {
     pool: SqlitePool,
+    snapshot: Option<snapshot::Snapshot>,
 }
 
 impl Storage {
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            snapshot: None,
+        }
+    }
+
+    pub fn with_snapshot(
+        pool: SqlitePool,
+        snapshot_dir: &str,
+        snapshot_interval: u64,
+    ) -> Result<Self, snapshot::Error> {
+        Ok(Self {
+            pool,
+            snapshot: Some(snapshot::Snapshot::new(snapshot_dir, snapshot_interval)?),
+        })
     }
 
     pub async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
@@ -59,7 +75,30 @@ impl Storage {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(result.get("ordinal"))
+        let written_ordinal = result.get("ordinal");
+
+        if let Some(ref snapshot) = self.snapshot {
+            if snapshot.should_snapshot(written_ordinal) {
+                self.create_snapshot().await?;
+            }
+        }
+
+        Ok(written_ordinal)
+    }
+
+    async fn create_snapshot(&self) -> Result<(), snapshot::Error> {
+        if let Some(ref snapshot) = self.snapshot {
+            let records = sqlx::query_as::<_, (String, Vec<u8>)>(
+                "SELECT key, value FROM records WHERE key LIKE 'map:%'",
+            )
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| snapshot::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+
+            snapshot.save_text(&records).await?;
+            snapshot.save_binary(&records).await?;
+        }
+        Ok(())
     }
 
     pub fn subscribe_from(
@@ -103,6 +142,7 @@ impl Storage {
 pub enum WriteError {
     Conflict(u64),
     Sql(sqlx::Error),
+    Snapshot(snapshot::Error),
 }
 
 impl From<sqlx::Error> for WriteError {
@@ -111,11 +151,18 @@ impl From<sqlx::Error> for WriteError {
     }
 }
 
+impl From<snapshot::Error> for WriteError {
+    fn from(err: snapshot::Error) -> Self {
+        WriteError::Snapshot(err)
+    }
+}
+
 impl std::fmt::Display for WriteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             WriteError::Conflict(ord) => write!(f, "Conflict: latest ordinal is {}", ord),
             WriteError::Sql(e) => write!(f, "Database error: {}", e),
+            WriteError::Snapshot(e) => write!(f, "Snapshot error: {}", e),
         }
     }
 }

@@ -2,3 +2,4 @@
 /docs/plans
 /doc
 /*.db*
+/snapshots
