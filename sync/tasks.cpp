@@ -4,6 +4,7 @@
 
 //#define TEMPLET_TASK_TEST_IMPL
 #include <syncmem.hpp>
+#include <logmap_wal.hpp>
 
 const int NUM_THREADS = 10;
 const int ARRAY_SIZE = 10;
@@ -12,7 +13,10 @@ int main()
 {
 	std::atomic_int PID = 0;
 
-	templet::write_ahead_log wal;
+    // choose implementation of WAL log
+    
+    // templet::write_ahead_log wal;
+	templet::logmap_wal wal;
 	std::vector<std::thread> threads(NUM_THREADS);
 
 	for (auto& t : threads)t = std::thread([&] { int pid = PID++;

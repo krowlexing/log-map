@@ -39,6 +39,7 @@ namespace templet {
 
 	class write_ahead_log {
 	public:
+		virtual ~write_ahead_log() = default;
 		virtual void write(unsigned& index, unsigned tag, const std::string& blob) {
 			std::unique_lock<std::mutex> lock(mut);
 			log.push_back(std::pair<unsigned, std::string>(tag, blob));
