@@ -959,6 +959,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "log-map-ffi"
+version = "0.1.0"
+dependencies = [
+ "log-map",
+ "log-server-types",
+ "tokio",
+]
+
+[[package]]
 name = "log-server"
 version = "0.1.0"
 dependencies = [
