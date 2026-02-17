@@ -101,10 +101,7 @@ impl Storage {
         Ok(())
     }
 
-    pub fn subscribe_from(
-        &self,
-        ordinal: u64,
-    ) -> Pin<Box<dyn Stream<Item = Record> + Send>> {
+    pub fn subscribe_from(&self, ordinal: u64) -> Pin<Box<dyn Stream<Item = Record> + Send>> {
         let pool = self.pool.clone();
         Box::pin(async_stream::stream! {
             let mut conn = pool.acquire().await.unwrap();

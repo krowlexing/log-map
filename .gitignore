@@ -3,3 +3,8 @@
 /doc
 /*.db*
 /snapshots
+
+/artifacts
+
+CLAUDE.md
+.claude
