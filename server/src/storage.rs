@@ -1,18 +1,76 @@
 use crate::models::Record;
 use crate::snapshot;
-use futures_util::stream::Stream;
+use futures_util::{future::Map, stream::Stream};
 use sqlx::{Row, SqlitePool};
-use std::pin::Pin;
+use std::{
+    collections::HashMap,
+    pin::Pin,
+    sync::{Arc, Mutex},
+};
+use thiserror::Error;
+
+pub struct InnerMapCache {
+    cache: HashMap<String, i64>,
+}
+
+#[derive(Error, Debug)]
+pub enum UpdateError {
+    #[error("This key was already updated")]
+    TooEarly,
+}
+
+impl InnerMapCache {
+    pub fn update(&mut self, ordinal: i64, key: String) -> Result<(), UpdateError> {
+        let last_update = self.cache.get(&key).cloned().unwrap_or(0);
+
+        if last_update >= ordinal {
+            return Err(UpdateError::TooEarly);
+        }
+
+        self.cache.insert(key, ordinal);
+
+        return Ok(());
+    }
+
+    fn new() -> Self {
+        Self {
+            cache: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct MapCache {
+    handle: Arc<Mutex<InnerMapCache>>,
+}
+
+impl MapCache {
+    pub fn new() -> Self {
+        Self {
+            handle: Arc::new(Mutex::new(InnerMapCache::new())),
+        }
+    }
+
+    pub async fn update(&self, key: String, ordinal: i64) -> Result<(), UpdateError> {
+        let mut map = self.handle.lock().unwrap();
+
+        map.update(ordinal, key)?;
+
+        Ok(())
+    }
+}
 
 pub struct Storage {
     pool: SqlitePool,
     snapshot: Option<snapshot::Snapshot>,
+    cache: MapCache,
 }
 
 impl Storage {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
             pool,
+            cache: MapCache::new(),
             snapshot: None,
         }
     }
@@ -24,6 +82,7 @@ impl Storage {
     ) -> Result<Self, snapshot::Error> {
         Ok(Self {
             pool,
+            cache: MapCache::new(),
             snapshot: Some(snapshot::Snapshot::new(snapshot_dir, snapshot_interval)?),
         })
     }
@@ -60,7 +119,8 @@ impl Storage {
         let latest_ordinal = latest_ordinal.unwrap_or(0) as u64;
         let new_ordinal = latest_ordinal + 1;
 
-        if latest_known < latest_ordinal {
+        let update_result = self.cache.update(key.clone(), new_ordinal as i64).await;
+        if let Err(e) = update_result {
             println!("conflict!: latest persisted - {latest_ordinal}, latest_known by client - {latest_known}");
             return Err(WriteError::Conflict(latest_ordinal));
         }
