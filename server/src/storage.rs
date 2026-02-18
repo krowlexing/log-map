@@ -58,8 +58,10 @@ impl Storage {
                 .get("max_ord");
 
         let latest_ordinal = latest_ordinal.unwrap_or(0) as u64;
+        let new_ordinal = latest_ordinal + 1;
 
         if latest_known < latest_ordinal {
+            println!("conflict!: latest persisted - {latest_ordinal}, latest_known by client - {latest_known}");
             return Err(WriteError::Conflict(latest_ordinal));
         }
 
@@ -68,7 +70,7 @@ impl Storage {
              ON CONFLICT(ordinal) DO UPDATE SET key = excluded.key, value = excluded.value, timestamp = excluded.timestamp
              RETURNING ordinal",
         )
-        .bind(ordinal as i64)
+        .bind(new_ordinal as i64)
         .bind(&key)
         .bind(&value)
         .bind(now)
