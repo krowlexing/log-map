@@ -977,6 +977,7 @@ dependencies = [
  "futures-util",
  "log-server-types",
  "sqlx",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
