@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures_util::stream::Stream;
@@ -12,7 +13,7 @@ use super::{MapCache, StorageBackend, WriteError};
 type RecordMap = BTreeMap<u64, (String, Vec<u8>, i64)>;
 
 pub struct MemoryStorage {
-    records: RwLock<RecordMap>,
+    records: Arc<RwLock<RecordMap>>,
     cache: MapCache,
     next_ordinal: AtomicU64,
     tx: broadcast::Sender<Record>,
@@ -22,7 +23,7 @@ impl MemoryStorage {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(1024);
         Self {
-            records: RwLock::new(BTreeMap::new()),
+            records: Arc::new(RwLock::new(BTreeMap::new())),
             cache: MapCache::new(),
             next_ordinal: AtomicU64::new(1),
             tx,
@@ -82,38 +83,37 @@ impl StorageBackend for MemoryStorage {
     }
 
     fn subscribe_from(&self, ordinal: u64) -> Pin<Box<dyn Stream<Item = Record> + Send>> {
-        // let records = self.records.clone();
-        // let mut rx = self.tx.subscribe();
+        let records = self.records.clone();
+        let tx = self.tx.clone();
 
-        // Box::pin(async_stream::stream! {
-        //     {
-        //         let r = records.read().await;
-        //         for (&ord, (key, value, timestamp)) in r.range(ordinal..) {
-        //             yield Record {
-        //                 ordinal: ord,
-        //                 key: key.clone(),
-        //                 value: value.clone(),
-        //                 timestamp: *timestamp,
-        //             };
-        //         }
-        //     }
+        Box::pin(async_stream::stream! {
+            let mut rx = {
+                let r = records.read().await;
+                for (&ord, (key, value, timestamp)) in r.range(ordinal..) {
+                    yield Record {
+                        ordinal: ord,
+                        key: key.clone(),
+                        value: value.clone(),
+                        timestamp: *timestamp,
+                    };
+                }
+                tx.subscribe()
+            };
 
-        //     loop {
-        //         match rx.recv().await {
-        //             Ok(record) => {
-        //                 if record.ordinal >= ordinal {
-        //                     yield record;
-        //                 }
-        //             }
-        //             Err(broadcast::error::RecvError::Closed) => break,
-        //             Err(broadcast::error::RecvError::Lagged(n)) => {
-        //                 tracing::warn!("Subscriber lagged by {} messages", n);
-        //             }
-        //         }
-        //     }
-        // })
-
-        todo!()
+            loop {
+                match rx.recv().await {
+                    Ok(record) => {
+                        if record.ordinal >= ordinal {
+                            yield record;
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Closed) => break,
+                    Err(broadcast::error::RecvError::Lagged(n)) => {
+                        tracing::warn!("Subscriber lagged by {} messages", n);
+                    }
+                }
+            }
+        })
     }
 
     async fn get_latest_snapshot(&self) -> Result<Option<(u64, Vec<u8>)>, WriteError> {
