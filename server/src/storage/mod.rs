@@ -54,7 +54,7 @@ impl Storage {
 
     pub async fn write(
         &self,
-        ordinal: u64,
+        _ordinal: u64,
         key: String,
         value: Vec<u8>,
         latest_known: u64,
@@ -71,7 +71,7 @@ impl Storage {
         let new_ordinal = latest_ordinal + 1;
 
         let update_result = self.cache.update(key.clone(), new_ordinal as i64).await;
-        if let Err(e) = update_result {
+        if let Err(_e) = update_result {
             println!("conflict!: latest persisted - {latest_ordinal}, latest_known by client - {latest_known}");
             return Err(WriteError::Conflict(latest_ordinal));
         }
