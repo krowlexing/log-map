@@ -67,6 +67,7 @@ impl KvServer for KvServiceImpl {
                                 });
                             }
                             Err(WriteError::Conflict(latest)) => {
+                                println!("write conflict: latest ordinal is {}, latest_known by client: {}", latest, req.latest_known);
                                 yield Ok(WriteResponse {
                                     accepted: false,
                                     error: format!("Conflict: latest ordinal is {}", latest),
@@ -74,6 +75,7 @@ impl KvServer for KvServiceImpl {
                                 });
                             }
                             Err(WriteError::Sql(e)) => {
+                                println!("database error: {}", e);
                                 yield Ok(WriteResponse {
                                     accepted: false,
                                     error: format!("Database error: {}", e),
@@ -81,6 +83,7 @@ impl KvServer for KvServiceImpl {
                                 });
                             }
                             Err(WriteError::Snapshot(e)) => {
+                                println!("snapshot error: {}", e);
                                 yield Ok(WriteResponse {
                                     accepted: false,
                                     error: format!("Snapshot error: {}", e),
@@ -90,6 +93,7 @@ impl KvServer for KvServiceImpl {
                         }
                     }
                     Err(e) => {
+                        tracing::error!("stream error: {}", e);
                         yield Err(Status::internal(format!("Stream error: {}", e)));
                         break;
                     }
@@ -117,7 +121,10 @@ impl KvServer for KvServiceImpl {
                     snapshot_data: Vec::new(),
                 }))
             }
-            Err(e) => Err(Status::internal(format!("Failed to get snapshot: {}", e))),
+            Err(e) => {
+                tracing::error!("failed to get snapshot: {}", e);
+                Err(Status::internal(format!("Failed to get snapshot: {}", e)))
+            }
         }
     }
 }

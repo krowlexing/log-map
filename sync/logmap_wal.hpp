@@ -17,8 +17,9 @@ public:
         oss << tag << ":" << blob.length() << ":" << blob;
         std::string value = oss.str();
 
-        _logmap.insert(_next_index, value);
-        index = _next_index++;
+        index = _next_index;
+        _logmap.insert(index, value);
+        _next_index++;
     }
 
     bool read(unsigned index, unsigned& tag, std::string& blob) override {

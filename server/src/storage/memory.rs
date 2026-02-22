@@ -72,6 +72,8 @@ impl StorageBackend for MemoryStorage {
         })?;
 
         records.insert(ordinal, (key.clone(), value.clone(), timestamp));
+        let value_maybe_str = String::from_utf8_lossy(&value);
+        println!("update #{ordinal}: {key} -> {value_maybe_str:?}");
         let _ = self.tx.send(Record {
             ordinal,
             key,

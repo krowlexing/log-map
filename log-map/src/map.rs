@@ -14,7 +14,7 @@ use crate::cache::Cache;
 use crate::error::Error;
 use crate::sync::SyncTask;
 
-const MAP_PREFIX: &str = "map:";
+const MAP_PREFIX: &str = "";
 const MAX_RETRIES: usize = 5;
 
 /// A distributed key-value map backed by the log-server.

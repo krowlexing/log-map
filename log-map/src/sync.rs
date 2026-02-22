@@ -11,7 +11,7 @@ use tonic::transport::Channel;
 use crate::Error;
 use crate::cache::Cache;
 
-const MAP_PREFIX: &str = "map:";
+const MAP_PREFIX: &str = "";
 const BMAP_MAGIC: &[u8; 4] = b"BMAP";
 
 pub struct SnapshotLoader;

@@ -23,3 +23,4 @@ snapshot backend:
     - minio (s3)
     - garage (s3)
 
+MemoryStorage: remove polling from subscribe_from, use broadcast channel instead

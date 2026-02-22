@@ -7,7 +7,7 @@
 #include <logmap_wal.hpp>
 
 const int NUM_THREADS = 10;
-const int ARRAY_SIZE = 100;
+const int ARRAY_SIZE = 10;
 
 int main()
 {

@@ -18,7 +18,8 @@ impl InnerMapCache {
     pub fn update(&mut self, key: String, latest_known: i64, new_ordinal: i64) -> Result<(), UpdateError> {
         let last_update = self.cache.get(&key).cloned().unwrap_or(0);
 
-        if last_update >= latest_known {
+        // println!("[cache] checking {key} with last update #{last_update}, with client's latest_known {latest_known}");
+        if last_update > latest_known {
             return Err(UpdateError::TooEarly);
         }
 
