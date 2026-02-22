@@ -1,4 +1,6 @@
 use std::pin::Pin;
+
+use async_trait::async_trait;
 use futures_util::stream::Stream;
 use sqlx::{Row, SqlitePool};
 use crate::{models::Record, snapshot};
@@ -156,6 +158,7 @@ impl Storage {
     }
 }
 
+#[async_trait]
 impl StorageBackend for Storage {
     async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
         self.append(key, value).await

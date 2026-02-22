@@ -1,18 +1,20 @@
 use crate::models::Record;
+use async_trait::async_trait;
 use futures_util::stream::Stream;
 use std::pin::Pin;
 
 use super::WriteError;
 
+#[async_trait]
 pub trait StorageBackend: Send + Sync {
-    fn append(&self, key: String, value: Vec<u8>) -> impl std::future::Future<Output = Result<u64, sqlx::Error>> + Send;
-    fn write(
+    async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error>;
+    async fn write(
         &self,
         ordinal: u64,
         key: String,
         value: Vec<u8>,
         latest_known: u64,
-    ) -> impl std::future::Future<Output = Result<u64, WriteError>> + Send;
+    ) -> Result<u64, WriteError>;
     fn subscribe_from(&self, ordinal: u64) -> Pin<Box<dyn Stream<Item = Record> + Send>>;
-    fn get_latest_snapshot(&self) -> impl std::future::Future<Output = Result<Option<(u64, Vec<u8>)>, WriteError>> + Send;
+    async fn get_latest_snapshot(&self) -> Result<Option<(u64, Vec<u8>)>, WriteError>;
 }
