@@ -1,15 +1,13 @@
 use std::sync::Arc;
 use tonic::transport::Server;
 
-use log_server::{db, grpc, storage};
+use log_server::{grpc, storage};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let snapshot_dir = "./snapshots";
-    let pool = db::init_pool("sqlite:log.db").await?;
-    let storage = Arc::new(storage::SqliteStorage::with_snapshot(pool, snapshot_dir, 100)?);
+    let storage = Arc::new(storage::MemoryStorage::new());
     let server = grpc::create_server(storage);
 
     let addr = "127.0.0.1:50051".parse()?;
