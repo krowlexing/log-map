@@ -11,7 +11,7 @@ async fn start_test_server() -> (SocketAddr, tokio::task::JoinHandle<()>) {
     let addr = listener.local_addr().unwrap();
 
     let pool = log_server::db::init_pool("sqlite::memory:").await.unwrap();
-    let storage = Arc::new(log_server::storage::Storage::new(pool));
+    let storage = Arc::new(log_server::storage::SqliteStorage::new(pool));
     let server = log_server::grpc::create_server(storage);
 
     let handle = tokio::spawn(async move {

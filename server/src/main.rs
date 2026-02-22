@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let snapshot_dir = "./snapshots";
     let pool = db::init_pool("sqlite:log.db").await?;
-    let storage = Arc::new(storage::Storage::with_snapshot(pool, snapshot_dir, 100)?);
+    let storage = Arc::new(storage::SqliteStorage::with_snapshot(pool, snapshot_dir, 100)?);
     let server = grpc::create_server(storage);
 
     let addr = "127.0.0.1:50051".parse()?;

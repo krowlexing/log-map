@@ -11,13 +11,13 @@ mod storage;
 
 pub use storage::StorageBackend;
 
-pub struct Storage {
+pub struct SqliteStorage {
     pool: SqlitePool,
     snapshot: Option<snapshot::Snapshot>,
     cache: MapCache,
 }
 
-impl Storage {
+impl SqliteStorage {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
             pool,
@@ -159,7 +159,7 @@ impl Storage {
 }
 
 #[async_trait]
-impl StorageBackend for Storage {
+impl StorageBackend for SqliteStorage {
     async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
         self.append(key, value).await
     }
