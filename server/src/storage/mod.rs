@@ -70,7 +70,7 @@ impl SqliteStorage {
         let latest_ordinal = latest_ordinal.unwrap_or(0) as u64;
         let new_ordinal = latest_ordinal + 1;
 
-        let update_result = self.cache.update(key.clone(), new_ordinal as i64).await;
+        let update_result = self.cache.update(key.clone(), latest_known as i64, new_ordinal as i64).await;
         if let Err(_e) = update_result {
             println!("conflict!: latest persisted - {latest_ordinal}, latest_known by client - {latest_known}");
             return Err(WriteError::Conflict(latest_ordinal));

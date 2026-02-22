@@ -15,14 +15,14 @@ pub enum UpdateError {
 }
 
 impl InnerMapCache {
-    pub fn update(&mut self, ordinal: i64, key: String) -> Result<(), UpdateError> {
+    pub fn update(&mut self, key: String, latest_known: i64, new_ordinal: i64) -> Result<(), UpdateError> {
         let last_update = self.cache.get(&key).cloned().unwrap_or(0);
 
-        if last_update >= ordinal {
+        if last_update >= latest_known {
             return Err(UpdateError::TooEarly);
         }
 
-        self.cache.insert(key, ordinal);
+        self.cache.insert(key, new_ordinal);
 
         return Ok(());
     }
@@ -46,10 +46,10 @@ impl MapCache {
         }
     }
 
-    pub async fn update(&self, key: String, ordinal: i64) -> Result<(), UpdateError> {
+    pub async fn update(&self, key: String, latest_known: i64, new_ordinal: i64) -> Result<(), UpdateError> {
         let mut map = self.handle.lock().unwrap();
 
-        map.update(ordinal, key)?;
+        map.update(key, latest_known, new_ordinal)?;
 
         Ok(())
     }
