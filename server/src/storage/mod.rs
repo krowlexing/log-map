@@ -162,10 +162,6 @@ impl SqliteStorage {
 
 #[async_trait]
 impl StorageBackend for SqliteStorage {
-    async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
-        self.append(key, value).await
-    }
-
     async fn write(
         &self,
         ordinal: u64,

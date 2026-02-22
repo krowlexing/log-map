@@ -7,7 +7,6 @@ use super::WriteError;
 
 #[async_trait]
 pub trait StorageBackend: Send + Sync {
-    async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error>;
     async fn write(
         &self,
         ordinal: u64,

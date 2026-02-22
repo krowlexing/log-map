@@ -39,22 +39,6 @@ impl Default for MemoryStorage {
 
 #[async_trait]
 impl StorageBackend for MemoryStorage {
-    async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
-        let mut records = self.records.write().await;
-        let timestamp = chrono::Utc::now().timestamp_millis();
-        let ordinal = self.next_ordinal.fetch_add(1, Ordering::SeqCst);
-
-        records.insert(ordinal, (key.clone(), value.clone(), timestamp));
-        let _ = self.tx.send(Record {
-            ordinal,
-            key,
-            value,
-            timestamp,
-        });
-
-        Ok(ordinal)
-    }
-
     async fn write(
         &self,
         _ordinal: u64,
