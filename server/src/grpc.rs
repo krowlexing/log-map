@@ -1,4 +1,4 @@
-use crate::storage::{SqliteStorage, WriteError};
+use crate::storage::{StorageBackend, WriteError};
 use futures_util::stream::{Stream, StreamExt};
 use log_server_types::kv::{kv_server_server::{KvServer, KvServerServer}, GetSnapshotRequest, GetSnapshotResponse, Record, SubscribeRequest, WriteRequest, WriteResponse};
 use std::pin::Pin;
@@ -7,11 +7,11 @@ use tonic::{Request, Response, Status};
 
 #[derive(Clone)]
 pub struct KvServiceImpl {
-    storage: Arc<SqliteStorage>,
+    storage: Arc<dyn StorageBackend>,
 }
 
 impl KvServiceImpl {
-    pub fn new(storage: Arc<SqliteStorage>) -> Self {
+    pub fn new(storage: Arc<dyn StorageBackend>) -> Self {
         Self { storage }
     }
 }
@@ -122,6 +122,6 @@ impl KvServer for KvServiceImpl {
     }
 }
 
-pub fn create_server(storage: Arc<SqliteStorage>) -> KvServerServer<KvServiceImpl> {
+pub fn create_server(storage: Arc<dyn StorageBackend>) -> KvServerServer<KvServiceImpl> {
     KvServerServer::new(KvServiceImpl::new(storage))
 }
