@@ -7,6 +7,7 @@ use crate::{models::Record, snapshot};
 pub use cache::MapCache;
 
 mod cache;
+mod memory;
 mod storage;
 
 pub use storage::StorageBackend;
