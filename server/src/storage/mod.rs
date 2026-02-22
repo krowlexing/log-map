@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -184,13 +185,13 @@ impl StorageBackend for SqliteStorage {
 #[derive(Debug)]
 pub enum WriteError {
     Conflict(u64),
-    Sql(sqlx::Error),
+    Other(Box<dyn Error + Send>),
     Snapshot(snapshot::Error),
 }
 
 impl From<sqlx::Error> for WriteError {
     fn from(err: sqlx::Error) -> Self {
-        WriteError::Sql(err)
+        WriteError::Other(Box::new(err))
     }
 }
 
@@ -204,7 +205,7 @@ impl std::fmt::Display for WriteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             WriteError::Conflict(ord) => write!(f, "Conflict: latest ordinal is {}", ord),
-            WriteError::Sql(e) => write!(f, "Database error: {}", e),
+            WriteError::Other(e) => write!(f, "Database error: {}", e),
             WriteError::Snapshot(e) => write!(f, "Snapshot error: {}", e),
         }
     }

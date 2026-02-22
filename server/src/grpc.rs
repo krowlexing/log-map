@@ -74,7 +74,7 @@ impl KvServer for KvServiceImpl {
                                     assigned_ordinal: latest,
                                 });
                             }
-                            Err(WriteError::Sql(e)) => {
+                            Err(WriteError::Other(e)) => {
                                 println!("database error: {}", e);
                                 yield Ok(WriteResponse {
                                     accepted: false,
