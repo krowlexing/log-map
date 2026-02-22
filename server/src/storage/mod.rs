@@ -5,6 +5,9 @@ use crate::{models::Record, snapshot};
 pub use cache::MapCache;
 
 mod cache;
+mod storage;
+
+pub use storage::StorageBackend;
 
 pub struct Storage {
     pool: SqlitePool,
@@ -150,6 +153,30 @@ impl Storage {
             }
         }
         Ok(None)
+    }
+}
+
+impl StorageBackend for Storage {
+    async fn append(&self, key: String, value: Vec<u8>) -> Result<u64, sqlx::Error> {
+        self.append(key, value).await
+    }
+
+    async fn write(
+        &self,
+        ordinal: u64,
+        key: String,
+        value: Vec<u8>,
+        latest_known: u64,
+    ) -> Result<u64, WriteError> {
+        self.write(ordinal, key, value, latest_known).await
+    }
+
+    fn subscribe_from(&self, ordinal: u64) -> Pin<Box<dyn Stream<Item = Record> + Send>> {
+        self.subscribe_from(ordinal)
+    }
+
+    async fn get_latest_snapshot(&self) -> Result<Option<(u64, Vec<u8>)>, WriteError> {
+        self.get_latest_snapshot().await
     }
 }
 
