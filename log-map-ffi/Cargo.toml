@@ -9,4 +9,4 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 log-map = { path = "../log-map" }
 log-server-types = { path = "../types" }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt"] }
