@@ -3,13 +3,17 @@ name = "log-server"
 version = "0.2.0"
 edition = "2021"
 
+[features]
+default = []
+sqlite = ["sqlx"]
+
 [dependencies]
 async-stream = "0.3"
 async-trait = "0.1"
 chrono = "0.4"
 futures-util = "0.3"
 log-server-types = { path = "../types" }
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio"], optional = true }
 thiserror = "2.0.18"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
@@ -19,3 +23,7 @@ tracing-subscriber = "0.3"
 
 [dev-dependencies]
 tonic-prost-build = "0.14.3"
+
+[[test]]
+name = "integration_test"
+required-features = ["sqlite"]

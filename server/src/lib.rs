@@ -1,3 +1,4 @@
+#[cfg(feature = "sqlite")]
 pub mod db;
 pub mod grpc;
 pub mod models;

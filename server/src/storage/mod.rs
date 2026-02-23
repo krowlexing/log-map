@@ -4,11 +4,13 @@ use crate::snapshot;
 
 mod cache;
 mod memory;
+#[cfg(feature = "sqlite")]
 mod sqlite;
 mod storage;
 
 pub use cache::MapCache;
 pub use memory::MemoryStorage;
+#[cfg(feature = "sqlite")]
 pub use sqlite::SqliteStorage;
 pub use storage::StorageBackend;
 
@@ -19,6 +21,7 @@ pub enum WriteError {
     Snapshot(snapshot::Error),
 }
 
+#[cfg(feature = "sqlite")]
 impl From<sqlx::Error> for WriteError {
     fn from(err: sqlx::Error) -> Self {
         WriteError::Other(Box::new(err))
