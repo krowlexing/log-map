@@ -22,5 +22,12 @@ cp "$PROJECT_ROOT/target/release/liblog_map_ffi.a" "$ARTIFACTS_DIR/liblogmap.a"
 cp "$PROJECT_ROOT/include/log_map.hpp" "$ARTIFACTS_DIR/"
 cp "$PROJECT_ROOT/sync/tasks" "$ARTIFACTS_DIR/"
 
+echo "Stripping artifacts..."
+strip "$ARTIFACTS_DIR/server"
+strip "$ARTIFACTS_DIR/matrix-mul"
+strip "$ARTIFACTS_DIR/liblogmap.so"
+strip "$ARTIFACTS_DIR/liblogmap.a"
+strip "$ARTIFACTS_DIR/tasks"
+
 echo "Artifacts collected in $ARTIFACTS_DIR/:"
 ls -la "$ARTIFACTS_DIR"
